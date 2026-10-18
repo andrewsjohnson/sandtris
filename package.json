@@ -1,0 +1,14 @@
+{
+  "name": "sandtris",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A falling sand meets tetromino puzzle prototype",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "node scripts/serve.js",
+    "start": "node scripts/serve.js",
+    "test": "node --test",
+    "check": "node --check src/engine.js && node --check src/main.js && node --check scripts/serve.js"
+  }
+}

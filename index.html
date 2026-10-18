@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sandtris — falling blocks, shifting sands</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main>
+      <header><span class="eyebrow">A LITTLE EXPERIMENT IN GRAVITY</span><h1>Sandtris<span>.</span></h1><p>Falling blocks. Shifting sands.</p></header>
+      <section class="game" aria-label="Sandtris game">
+        <canvas id="board" width="240" height="400" aria-label="Game board. Use arrow keys to move and rotate; space to drop."></canvas>
+        <aside><span class="eyebrow">SCORE</span><output id="score" aria-live="polite">0</output><p id="status" role="status">Make a color reach both walls.</p><button id="pause">Pause</button><button id="restart">New game</button><div class="instructions"><p>← → &nbsp; Move</p><p>↑ &nbsp; Rotate</p><p>↓ &nbsp; Fall faster</p><p>Space &nbsp; Drop</p><p>P &nbsp; Pause</p></div></aside>
+      </section>
+      <nav aria-label="Touch controls"><button data-action="left" aria-label="Move left">←</button><button data-action="rotate" aria-label="Rotate">↻</button><button data-action="right" aria-label="Move right">→</button><button data-action="drop">Drop ↓</button></nav>
+      <footer>Connect one color from wall to wall to clear it.<br />Every block becomes a little less predictable.</footer>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
