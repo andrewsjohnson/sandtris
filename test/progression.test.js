@@ -64,3 +64,14 @@ test('run rewards bank exactly once and retain bests without counting unfinished
   assert.equal(progress.bestScore, 384);
   assert.equal(progress.bestStage, 5);
 });
+
+test('old saves retain currency and existing unlocks while supporting all new purchases', () => {
+  const progress = loadProgress(storage(JSON.stringify({ version: 1, shards: 100, unlocked: ['drift', 'collector'], runs: 4, wins: 1, bestScore: 1000, bestStage: 5 })));
+  for (const id of ['crossroads', 'supply', 'echo', 'salvage', 'dividend', 'revival']) assert.ok(unlock(progress, id));
+  assert.equal(progress.unlocked.length, 8);
+  assert.equal(progress.shards, 36);
+  assert.equal(progress.bestScore, 1000);
+  const saved = storage();
+  saveProgress(saved, progress);
+  assert.deepEqual(loadProgress(saved), progress);
+});

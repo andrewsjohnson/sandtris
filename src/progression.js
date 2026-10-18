@@ -6,6 +6,12 @@ export const UPGRADES = [
   { id: 'patience', name: 'Patient hands', icon: '◷', cost: 0, description: 'Pieces fall more slowly: +2 simulation ticks between drops per stack.' },
   { id: 'drift', name: 'Chromatic drift', icon: '◈', cost: 8, description: 'Before a clear, up to 12 neighboring grains adopt its color per stack, setting up cascades.' },
   { id: 'collector', name: 'Chain collector', icon: '✧', cost: 12, description: 'Earn 1 extra permanent shard per chain link beyond the first, per stack.' },
+  { id: 'crossroads', name: 'Crossroads', icon: '⤨', cost: 6, description: 'Reroll each stage reward once per stack. Rerolls refresh at every draft.' },
+  { id: 'supply', name: 'Supply cache', icon: '⊞', cost: 6, description: 'Gain 1 excavation charge now and on entering each later stage, per stack.' },
+  { id: 'echo', name: 'Color echo', icon: '◉', cost: 10, description: 'Match your falling piece to the next color once per stage, per stack. Does not consume the next piece.' },
+  { id: 'salvage', name: 'Salvage', icon: '◇', cost: 8, description: 'Every 192 grains cleared after taking this upgrade earns 1 extra shard per stack.' },
+  { id: 'dividend', name: 'Deep pockets', icon: '◬', cost: 14, description: 'Each later stage you complete earns 2 extra shards per stack, including the final stage.' },
+  { id: 'revival', name: 'Second wind', icon: '↟', cost: 20, description: 'Gain 1 rescue per stack. When topped out, clear the top 16 rows and continue. Rescues last for this run.' },
 ];
 
 const integer = value => Number.isSafeInteger(value) && value >= 0 ? value : 0;

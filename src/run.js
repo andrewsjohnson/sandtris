@@ -22,6 +22,10 @@ export class Run extends Game {
     this.state = 'active';
     this.upgrades = {};
     this.charges = 0;
+    this.echoCharges = 0;
+    this.rescues = 0;
+    this.rerolls = 0;
+    this.salvageGrains = 0;
     this.offers = [];
     this.pool = UPGRADES.filter(u => !u.cost || progress.unlocked.includes(u.id));
     // Unlocks also become optional starting loadouts on future runs.
@@ -43,20 +47,39 @@ export class Run extends Game {
   addUpgrade(id) {
     this.upgrades[id] = (this.upgrades[id] || 0) + 1;
     if (id === 'demolition') this.charges += 2;
+    if (id === 'supply') this.charges++;
+    if (id === 'echo') this.echoCharges++;
+    if (id === 'revival') this.rescues++;
   }
 
-  draft() {
+  rollOffers(previous = []) {
     const pool = [...this.pool];
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(this.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
-    this.offers = pool.slice(0, 3);
+    // Prefer alternatives to the old draft, preserving random order within
+    // each group. Repeats only fill gaps in smaller, newly unlocked pools.
+    this.offers = [...pool.filter(u => !previous.includes(u.id)), ...pool.filter(u => previous.includes(u.id))].slice(0, 3);
+  }
+
+  draft() {
+    this.rollOffers();
+    this.rerolls = this.upgrades.crossroads || 0;
     this.state = 'reward';
+  }
+
+  reroll() {
+    if (this.state !== 'reward' || !this.rerolls) return false;
+    this.rollOffers(this.offers.map(u => u.id));
+    this.rerolls--;
+    return true;
   }
 
   choose(id) {
     if (this.state !== 'reward' || !this.offers.some(u => u.id === id)) return false;
+    this.charges += this.upgrades.supply || 0;
+    this.echoCharges = this.upgrades.echo || 0;
     this.addUpgrade(id);
     this.stage++;
     this.stageScore = 0;
@@ -84,6 +107,13 @@ export class Run extends Game {
     this.charges--;
     this.chain = 0;
     this.beginSettling();
+    return true;
+  }
+
+  useEcho() {
+    if (!this.canAct || !this.echoCharges || this.piece.color === this.nextPiece.color) return false;
+    this.piece.color = this.nextPiece.color;
+    this.echoCharges--;
     return true;
   }
 
@@ -115,6 +145,11 @@ export class Run extends Game {
     this.clearCount++;
     this.bestChain = Math.max(this.bestChain, this.chain);
     this.bonusShards += (this.chain > 1 ? 1 : 0) * (this.upgrades.collector || 0);
+    if (this.upgrades.salvage) {
+      this.salvageGrains += cleared.length;
+      this.bonusShards += Math.floor(this.salvageGrains / 192) * this.upgrades.salvage;
+      this.salvageGrains %= 192;
+    }
     if (this.upgrades.pressure && this.clearCount % 3 === 0) this.excavate(2 + this.upgrades.pressure);
     // Move only grains bordering the clear, without wrapping rows or entering
     // the frozen active piece. Each pass preserves the remaining grain count.
@@ -152,11 +187,19 @@ export class Run extends Game {
 
   step() {
     if (this.state !== 'active') return;
+    if (this.over && this.rescues) {
+      this.rescues--;
+      this.grid.fill(0, 0, 16 * WIDTH);
+      this.over = false;
+      this.chain = 0;
+      this.beginSettling();
+    }
     super.step();
     if (this.over) { this.state = 'lost'; return; }
     const goal = this.objective;
     if (this.phase !== 'playing' || this.stageScore < goal.target || (goal.color && this.stageColors[goal.color] < goal.colorTarget)) return;
     this.clearedStages++;
+    this.bonusShards += 2 * (this.upgrades.dividend || 0);
     if (this.stage === STAGES.length - 1) this.state = 'won';
     else this.draft();
   }

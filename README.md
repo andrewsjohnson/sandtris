@@ -27,7 +27,7 @@ objectives and score; excavation and pressure vents do not.
 
 ### Upgrades
 
-Four upgrades are available in the starting draft pool. Two more can be unlocked
+Four upgrades are available in the starting draft pool. Eight more can be unlocked
 permanently at camp. Picks last for the current run and repeat picks stack.
 
 | Upgrade | Effect | Unlock |
@@ -38,10 +38,27 @@ permanently at camp. Picks last for the current run and repeat picks stack.
 | Patient hands | Add two ticks between piece falls per stack | Available |
 | Chromatic drift | Before clearing, recolor up to 12 neighboring grains per stack to the clearing color | 8 shards |
 | Chain collector | Each clear after the first in a cascade earns one extra shard per stack | 12 shards |
+| Crossroads | One draft reroll per stack, refreshed at each stage reward | 6 shards |
+| Supply cache | One excavation charge now and on entering each later stage, per stack | 6 shards |
+| Color echo | Match the falling piece to the queued color once per stage per stack | 10 shards |
+| Salvage | Every 192 future connected-clear grains earn one extra shard per stack | 8 shards |
+| Deep pockets | Each later stage completion earns two extra shards per stack | 14 shards |
+| Second wind | One top-out rescue per stack; clear the top 16 rows and continue | 20 shards |
 
 Drift grains remain on the board and can become part of a later clear. Aftershock
 preserves grain count and cannot push grains into the active piece. Excavation
 starts a settling phase that can trigger a normal cascade.
+
+The **Next piece** panel shows the queued shape and named color. It stays fixed
+through movement, rotation, sand simulation, and reward choices, then becomes the
+next falling piece. Color echo changes only the active piece, leaving that queue
+intact. Matching an already matching color costs no charge; echo charges refill
+at stage entry rather than stockpiling.
+
+Crossroads prefers options absent from the previous draft; small pools may repeat
+some choices. Rerolls never change the board or queued piece. Supply cache adds
+charges to your stockpile. Second wind charges last across the run and are not
+refilled by changing stages; rescue removal grants no score or objective progress.
 
 ### Permanent progress
 
@@ -49,7 +66,7 @@ When you win, lose, or choose to end a run at camp, bank:
 
 - Three shards per completed stage.
 - One shard per 192 grains cleared across the run.
-- Chain collector bonuses.
+- Chain collector, Salvage, and Deep pockets bonuses.
 - Eight extra shards for winning.
 
 Use shards at camp to expand the upgrade pool. Each purchased upgrade also
@@ -58,6 +75,8 @@ unlocks, total runs, wins, best score, and deepest stage persist in localStorage
 on the current browser and device. Active runs restart on reload. If browser
 storage is unavailable, the game still works and shows that progress is temporary.
 There is no account, backend, or cross-device sync.
+Existing version 1 saves keep their shards, records, and purchased upgrades when
+new upgrades are added.
 
 ## Controls
 
@@ -69,6 +88,7 @@ There is no account, backend, or cross-device sync.
 | Space | Hard drop |
 | P | Pause / resume |
 | B / Excavate button | Use a demolition charge |
+| C / Match next button | Use a Color echo charge |
 
 On-screen buttons support touch. Mobile zoom gestures, text selection, tap
 highlighting, and long-press callouts are disabled. The game pauses when the tab
@@ -123,7 +143,7 @@ pull requests. Keep asset URLs relative for the `/sandtris/` project path.
 
 ## Next milestones
 
-Playtest stage targets and upgrade balance; add landing and next-piece previews,
+Playtest stage targets and upgrade balance; add a landing preview,
 press-and-hold movement, richer clear feedback, and saved in-progress runs.
 Rotation uses simple horizontal kicks. There is no hold piece, lock delay,
 audio, or online leaderboard. Licensing is still to be chosen.

@@ -100,7 +100,7 @@ test('unlock pool is a snapshot; only purchased upgrades can start a run', () =>
   const equipped = new Run(progress, () => 0, 'drift');
   assert.equal(equipped.pool.length, 5);
   assert.equal(equipped.upgrades.drift, 1);
-  assert.equal(UPGRADES.length, 6);
+  assert.equal(UPGRADES.length, 12);
 });
 
 test('Patient hands stacks slower gravity; demolition consumes charges and settles without scoring', () => {
@@ -178,4 +178,125 @@ test('Aftershock nudges bordering sand without losing grains or crossing the row
   assert.equal(run.grid[grain - 1], 0);
   assert.equal(run.grid.filter(Boolean).length, 1);
   assert.equal(run.score, 1);
+});
+
+test('Color echo matches the preview without consuming it; equal colors and blocked phases cost no charges', () => {
+  const progress = freshProgress();
+  progress.unlocked.push('echo');
+  const run = new Run(progress, () => 0, 'echo');
+  assert.equal(run.echoCharges, 1);
+  assert.equal(run.useEcho(), false);
+  assert.equal(run.echoCharges, 1);
+  run.nextPiece.color = 3;
+  const preview = structuredClone(run.nextPiece);
+  run.phase = 'settling';
+  assert.equal(run.useEcho(), false);
+  run.phase = 'playing';
+  assert.equal(run.useEcho(), true);
+  assert.equal(run.piece.color, 3);
+  assert.equal(run.echoCharges, 0);
+  assert.deepEqual(run.nextPiece, preview);
+  run.drop();
+  assert.equal(run.piece.color, 3);
+  assert.deepEqual(run.piece.shape, preview.shape);
+});
+
+test('Supply cache refreshes excavation charges on entry; Color echo refills without stockpiling', () => {
+  const progress = freshProgress();
+  progress.unlocked.push('supply', 'echo');
+  const run = new Run(progress, () => 0, 'supply');
+  assert.equal(run.charges, 1);
+  run.addUpgrade('echo'); run.addUpgrade('echo');
+  run.echoCharges = 0;
+  run.draft();
+  // Choose a neutral upgrade to isolate the refill from the draft reward.
+  run.offers = [UPGRADES.find(u => u.id === 'patience')];
+  assert.ok(run.choose('patience'));
+  assert.equal(run.charges, 2);
+  assert.equal(run.echoCharges, 2);
+  run.echoCharges = 1;
+  run.draft();
+  run.offers = [UPGRADES.find(u => u.id === 'echo')];
+  assert.ok(run.choose('echo'));
+  assert.equal(run.echoCharges, 3);
+  assert.equal(run.charges, 3);
+});
+
+test('Crossroads rerolls alternatives without changing the board or preview; budget refreshes per draft', () => {
+  const progress = freshProgress();
+  progress.unlocked = UPGRADES.filter(u => u.cost).map(u => u.id);
+  const run = new Run(progress, () => 0.25, 'crossroads');
+  assert.equal(run.reroll(), false);
+  run.draft();
+  const old = run.offers.map(u => u.id);
+  const preview = structuredClone(run.nextPiece);
+  const board = run.grid.slice();
+  assert.equal(run.rerolls, 1);
+  assert.equal(run.reroll(), true);
+  assert.equal(run.rerolls, 0);
+  assert.equal(new Set(run.offers.map(u => u.id)).size, 3);
+  assert.ok(run.offers.every(u => !old.includes(u.id)));
+  assert.deepEqual(run.nextPiece, preview);
+  assert.deepEqual(run.grid, board);
+  assert.equal(run.reroll(), false);
+  run.choose(run.offers[0].id);
+  run.draft();
+  assert.equal(run.rerolls, run.upgrades.crossroads);
+});
+
+test('Salvage counts only future connected clears, including overflow, and stacks rewards', () => {
+  const run = new Run(freshProgress(), () => 0);
+  run.score = 1920;
+  run.addUpgrade('salvage'); run.addUpgrade('salvage');
+  function remove(count) {
+    run.grid.fill(1, 0, count);
+    run.highlight = Array.from({ length: count }, (_, i) => i);
+    run.chain = 1;
+    run.clearHighlighted();
+  }
+  remove(100);
+  assert.equal(run.bonusShards, 0);
+  remove(100);
+  assert.equal(run.bonusShards, 2);
+  assert.equal(run.salvageGrains, 8);
+  remove(400);
+  assert.equal(run.bonusShards, 6);
+  assert.equal(run.salvageGrains, 24);
+});
+
+test('Deep pockets rewards later completed stages once, including victory', () => {
+  const run = new Run(freshProgress(), () => 0);
+  run.addUpgrade('dividend'); run.addUpgrade('dividend');
+  run.stageScore = run.objective.target;
+  run.step();
+  assert.equal(run.bonusShards, 4);
+  run.step();
+  assert.equal(run.bonusShards, 4);
+  run.choose(run.offers.find(u => u.id !== 'dividend').id);
+  run.stage = 4;
+  run.stageScore = run.objective.target;
+  run.step();
+  assert.equal(run.state, 'won');
+  assert.equal(run.bonusShards, 8);
+});
+
+test('Second wind spends a rescue, preserves the queued piece, and still allows later defeat', () => {
+  const progress = freshProgress();
+  progress.unlocked.push('revival');
+  const run = new Run(progress, () => 0, 'revival');
+  run.grid.fill(1);
+  run.spawn();
+  const piece = structuredClone(run.piece);
+  const next = structuredClone(run.nextPiece);
+  run.step();
+  assert.equal(run.state, 'active');
+  assert.equal(run.over, false);
+  assert.equal(run.rescues, 0);
+  assert.equal(run.phase, 'settling');
+  assert.equal(run.grid.slice(0, 16 * WIDTH).filter(Boolean).length, 0);
+  assert.deepEqual(run.piece, piece);
+  assert.deepEqual(run.nextPiece, next);
+  assert.equal(run.score, 0);
+  run.grid.fill(2); run.spawn(); run.step();
+  assert.equal(run.state, 'lost');
 });

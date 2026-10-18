@@ -14,6 +14,7 @@ const SHAPES = [
   [[0, 0], [0, 1], [1, 1], [2, 1]],
   [[2, 0], [0, 1], [1, 1], [2, 1]],
 ];
+const SHAPE_NAMES = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
 
 // The simulation has no DOM dependencies. Inject a seeded RNG for reproducible runs.
 export class Game {
@@ -28,16 +29,27 @@ export class Game {
     this.stillTicks = 0;
     this.highlight = [];
     this.chain = 0;
+    this.nextPiece = this.createPiece();
     this.spawn();
+  }
+
+  createPiece() {
+    const shape = Math.floor(this.random() * SHAPES.length);
+    return {
+      shape: SHAPES[shape].map(p => [...p]),
+      name: SHAPE_NAMES[shape],
+      color: 1 + Math.floor(this.random() * 4),
+    };
   }
 
   spawn() {
     this.piece = {
-      shape: SHAPES[Math.floor(this.random() * SHAPES.length)].map(p => [...p]),
-      color: 1 + Math.floor(this.random() * 4),
+      ...this.nextPiece,
+      shape: this.nextPiece.shape.map(p => [...p]),
       x: Math.floor(WIDTH / 2) - 2 * CELL,
       y: 0,
     };
+    this.nextPiece = this.createPiece();
     if (!this.fits(this.piece)) this.over = true;
   }
 

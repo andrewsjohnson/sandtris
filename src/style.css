@@ -17,6 +17,9 @@ p { font-size: 14px; line-height: 1.6; color: #b4c0ba; }
 .game { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 32px; align-items: start; }
 canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; background: #0b1013; border: 1px solid #465253; border-radius: 4px; }
 aside { padding-top: 6px; }
+.forecast { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 16px 0; padding: 10px; background: #1b2325; border: 1px solid #354042; border-radius: 6px; }
+.forecast canvas { flex: 0 0 auto; width: 72px; height: 42px; background: transparent; border: 0; }
+.forecast strong { display: block; font-size: 14px; margin-top: 4px; text-transform: capitalize; }
 #objective { min-height: 44px; }
 progress { width: 100%; height: 7px; accent-color: #f0ba65; border: 0; border-radius: 5px; overflow: hidden; background: #303a3b; }
 progress::-webkit-progress-bar { background: #303a3b; }
@@ -87,6 +90,8 @@ select { width: 100%; touch-action: manipulation; }
   #status { font-size: 10px; min-height: 42px; }
   .build { margin-top: 18px; }
   .build li { font-size: 10px; }
+  .forecast { gap: 4px; padding: 8px; }
+  .forecast canvas { width: 56px; height: 33px; }
   nav { grid-template-columns: repeat(3, 1fr); }
   nav button:last-child { grid-column: 1 / -1; }
   footer { flex-direction: column; gap: 6px; }

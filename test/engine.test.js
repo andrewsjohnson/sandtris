@@ -160,3 +160,23 @@ test('restart creates a fresh game without pending glow or chain state', () => {
   for (let i = 0; i < 100; i++) game.step();
   assert.equal(game.score, 0);
 });
+
+test('queued piece keeps its shape and color through settling and becomes the next spawn', () => {
+  const values = [0, 0.1, 0.4, 0.9, 0.8, 0.5];
+  let cursor = 0;
+  const game = new Game(() => values[cursor++ % values.length]);
+  const preview = structuredClone(game.nextPiece);
+  assert.notEqual(game.piece.color, preview.color);
+  game.rotate();
+  for (let n = 0; n < 30; n++) game.step();
+  assert.deepEqual(game.nextPiece, preview);
+  game.drop();
+  assert.equal(game.piece.color, preview.color);
+  assert.equal(game.piece.name, preview.name);
+  assert.deepEqual(game.piece.shape, preview.shape);
+  assert.equal(game.piece.y, 0);
+  assert.notEqual(game.piece.shape, preview.shape);
+  const afterSpawn = structuredClone(game.nextPiece);
+  game.piece.shape[0][0] += 1;
+  assert.deepEqual(game.nextPiece, afterSpawn);
+});

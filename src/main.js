@@ -5,6 +5,8 @@ import { UPGRADES, loadProgress, saveProgress, unlock, recordRun } from './progr
 const $ = selector => document.querySelector(selector);
 const canvas = $('#board');
 const context = canvas.getContext('2d');
+const preview = $('#next-piece');
+const previewContext = preview.getContext('2d');
 const dialog = $('#camp');
 let storage;
 try { storage = window.localStorage; } catch { /* Private browsing can block access. */ }
@@ -17,6 +19,7 @@ let lastTime = performance.now();
 let presentedState = null;
 let selectedLoadout = '';
 let buildSignature = '';
+let previewSignature = '';
 const STEP = 1000 / 60;
 const colorNames = ['', 'gold', 'jade', 'coral', 'violet'];
 function setText(selector, value) {
@@ -36,7 +39,8 @@ function openDialog(content) {
   dialog.scrollTop = 0;
 }
 function collection() {
-  return `<div class="collection"><span class="eyebrow">PERMANENT UNLOCKS</span><p class="small">Expand your draft pool. Unlocked upgrades can also be chosen as a starting loadout.</p>${UPGRADES.filter(u => u.cost).map(u => {
+  const unlocks = UPGRADES.filter(u => u.cost).sort((a, b) => a.cost - b.cost);
+  return `<div class="collection"><span class="eyebrow">PERMANENT UNLOCKS · ${progress.unlocked.length} / ${unlocks.length}</span><p class="small">Expand your draft pool. Unlocked upgrades can also be chosen as a starting loadout.</p>${unlocks.map(u => {
     const owned = progress.unlocked.includes(u.id);
     return `<article class="unlock"><div><strong>${u.icon} ${u.name}</strong><p>${u.description}</p></div><button data-unlock="${u.id}" ${owned || progress.shards < u.cost ? 'disabled' : ''}>${owned ? 'Unlocked' : `${u.cost} shards`}</button></article>`;
   }).join('')}</div>`;
@@ -49,7 +53,7 @@ function camp() {
 }
 function showReward() {
   const next = STAGES[game.stage + 1];
-  openDialog(`<span class="eyebrow">STAGE ${game.stage + 1} COMPLETE</span><h2 id="dialog-title">Take something with you.</h2><p>Your sand stays. Choose one upgrade for the rest of this run. Repeats stack.</p><div class="choices">${game.offers.map(u => `<button class="upgrade" data-choice="${u.id}"><span class="upgrade-icon">${u.icon}</span><strong>${u.name}</strong><span>${u.description}</span><small>${game.upgrades[u.id] ? `Stack ${game.upgrades[u.id] + 1}` : 'Add to your build'} →</small></button>`).join('')}</div><p class="small">Next: ${next.name} · clear ${next.target} grains${next.color ? `, including ${next.colorTarget} ${colorNames[next.color]}` : ''}. Gravity gets faster.</p><button class="quiet" id="bank">Bank ${game.reward} shards & end run</button>`);
+  openDialog(`<span class="eyebrow">STAGE ${game.stage + 1} COMPLETE</span><h2 id="dialog-title">Take something with you.</h2><p>Your sand stays. Choose one upgrade for the rest of this run. Repeats stack.</p><div class="choices">${game.offers.map(u => `<button class="upgrade" data-choice="${u.id}"><span class="upgrade-icon">${u.icon}</span><strong>${u.name}</strong><span>${u.description}</span><small>${game.upgrades[u.id] ? `Stack ${game.upgrades[u.id] + 1}` : 'Add to your build'} →</small></button>`).join('')}</div>${game.upgrades.crossroads ? `<button id="reroll" class="wide" ${game.rerolls ? '' : 'disabled'}>Reroll choices · ${game.rerolls} left</button>` : ''}<p class="small">Next: ${next.name} · clear ${next.target} grains${next.color ? `, including ${next.colorTarget} ${colorNames[next.color]}` : ''}. Gravity gets faster.</p><button class="quiet" id="bank">Bank ${game.reward} shards & end run</button>`);
 }
 function showSummary() {
   if (recordRun(progress, game)) persist();
@@ -75,6 +79,7 @@ function action(name) {
   if (name === 'down') game.fall();
   if (name === 'drop') { game.drop(); fallTicks = 0; }
   if (name === 'demolish') game.useDemolition();
+  if (name === 'echo') game.useEcho();
 }
 function confirmReturn() {
   if (!game || ['won', 'lost', 'retired'].includes(game.state)) { camp(); return; }
@@ -96,6 +101,7 @@ dialog.addEventListener('click', event => {
     else { dialog.close(); canvas.focus({ preventScroll: true }); }
   }
   if (button.id === 'bank') { game.retire(); presentedState = game.state; showSummary(); }
+  if (button.id === 'reroll' && game.reroll()) showReward();
   if (button.dataset.choice && game.choose(button.dataset.choice)) {
     presentedState = 'active';
     elapsed = 0;
@@ -111,21 +117,43 @@ dialog.addEventListener('click', event => {
 $('#camp-button').addEventListener('click', confirmReturn);
 $('#pause').addEventListener('click', event => { setPaused(!paused); event.target.blur(); });
 $('#demolish').addEventListener('click', event => { action('demolish'); event.target.blur(); });
+$('#echo').addEventListener('click', event => { action('echo'); event.target.blur(); });
 document.querySelectorAll('[data-action]').forEach(button => {
   button.addEventListener('click', () => { action(button.dataset.action); button.blur(); });
 });
 document.addEventListener('keydown', event => {
   if (dialog.open || event.target instanceof HTMLButtonElement) return;
-  const keys = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'rotate', ArrowDown: 'down', ' ': 'drop', b: 'demolish', B: 'demolish' };
+  const keys = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'rotate', ArrowDown: 'down', ' ': 'drop', b: 'demolish', B: 'demolish', c: 'echo', C: 'echo' };
   if (keys[event.key]) {
     event.preventDefault();
-    if (!event.repeat || !['rotate', 'drop', 'demolish'].includes(keys[event.key])) action(keys[event.key]);
+    if (!event.repeat || !['rotate', 'drop', 'demolish', 'echo'].includes(keys[event.key])) action(keys[event.key]);
   }
   if (event.key.toLowerCase() === 'p' && !event.repeat && game?.state === 'active') setPaused(!paused);
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden && game) setPaused(true); });
 
+function drawPreview() {
+  const signature = JSON.stringify(game?.nextPiece || null);
+  if (signature === previewSignature) return;
+  previewSignature = signature;
+  previewContext.clearRect(0, 0, preview.width, preview.height);
+  const next = game?.nextPiece;
+  setText('#next-color', next ? colorNames[next.color] : '—');
+  preview.setAttribute('aria-label', next ? `Next piece: ${next.name}, ${colorNames[next.color]}` : 'Begin a run to see the next piece');
+  if (!next) return;
+  const xs = next.shape.map(([x]) => x);
+  const ys = next.shape.map(([, y]) => y);
+  const minX = Math.min(...xs);
+  const minY = Math.min(...ys);
+  const block = 12;
+  const offsetX = (preview.width - (Math.max(...xs) - minX + 1) * block) / 2;
+  const offsetY = (preview.height - (Math.max(...ys) - minY + 1) * block) / 2;
+  previewContext.fillStyle = COLORS[next.color];
+  for (const [x, y] of next.shape) previewContext.fillRect(offsetX + (x - minX) * block, offsetY + (y - minY) * block, block - 1, block - 1);
+}
+
 function draw() {
+  drawPreview();
   context.fillStyle = COLORS[0];
   context.fillRect(0, 0, canvas.width, canvas.height);
   const scale = canvas.width / WIDTH;
@@ -156,6 +184,12 @@ function draw() {
   $('#demolish').disabled = !game?.canAct || !game.charges || paused || dialog.open;
   const toolText = `Excavate · ${game?.charges || 0} charges`;
   if ($('#demolish').dataset.label !== toolText) { $('#demolish').innerHTML = `${toolText} <kbd>B</kbd>`; $('#demolish').dataset.label = toolText; }
+  $('#echo').disabled = !game?.canAct || !game.echoCharges || paused || dialog.open || game.piece.color === game.nextPiece.color;
+  const echoText = `Match next · ${game?.echoCharges || 0} charges`;
+  if ($('#echo').dataset.label !== echoText) { $('#echo').innerHTML = `${echoText} <kbd>C</kbd>`; $('#echo').dataset.label = echoText; }
+  $('#echo').title = game && game.piece.color === game.nextPiece.color ? 'This piece already matches the next color; no charge needed.' : 'Color echo: match this piece to the next color.';
+  $('#rescue-count').hidden = !game?.upgrades.revival;
+  setText('#rescue-count', `Rescues remaining: ${game?.rescues || 0}`);
   document.querySelectorAll('[data-action]').forEach(button => { button.disabled = !game?.canAct || paused || dialog.open; });
   const status = !game ? 'Connect one color from wall to wall.'
     : paused ? 'Paused. Take your time.'
