@@ -57,7 +57,13 @@ npm test
 
 The board is 60 × 100 sand cells; each tetromino block is 4 × 4 grains.
 Sand falls down or diagonally down into empty cells. Four-way same-color
-connections clear immediately when they touch both walls; diagonals do not connect.
+connections trigger a settling window when they touch both walls; diagonals do
+not connect. Sand settles for at least 0.5 seconds and must be still for six
+ticks before the connected groups are recomputed. Those grains glow for 0.4
+seconds, then clear. The remaining sand gets the same settling window before
+checking for a chain reaction. Piece movement and gravity wait until the whole
+sequence finishes; pause and restart still work throughout. Scores count each
+removed grain once, with no chain multiplier.
 The active piece blocks sand. A blocked spawn ends the game. `new Game(random)`
 accepts an RNG function for reproducible tests and future replay support.
 

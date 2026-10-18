@@ -2,6 +2,9 @@ export const WIDTH = 60;
 export const HEIGHT = 100;
 export const CELL = 4;
 export const COLORS = ['#0b1013', '#f0ba65', '#7bc5b4', '#e88379', '#969ee3'];
+export const SETTLE_TICKS = 30;
+export const STILL_TICKS = 6;
+export const GLOW_TICKS = 24;
 const SHAPES = [
   [[0, 1], [1, 1], [2, 1], [3, 1]],
   [[1, 0], [2, 0], [1, 1], [2, 1]],
@@ -20,6 +23,11 @@ export class Game {
     this.score = 0;
     this.over = false;
     this.tick = 0;
+    this.phase = 'playing';
+    this.phaseTicks = 0;
+    this.stillTicks = 0;
+    this.highlight = [];
+    this.chain = 0;
     this.spawn();
   }
 
@@ -47,7 +55,7 @@ export class Game {
   }
 
   move(dx, dy) {
-    if (this.over) return false;
+    if (this.over || this.phase !== 'playing') return false;
     const next = { ...this.piece, x: this.piece.x + dx, y: this.piece.y + dy };
     if (!this.fits(next)) return false;
     this.piece = next;
@@ -55,7 +63,7 @@ export class Game {
   }
 
   rotate() {
-    if (this.over) return;
+    if (this.over || this.phase !== 'playing') return;
     const shape = this.piece.shape.map(([x, y]) => [2 - y, x]);
     for (const offset of [0, -CELL, CELL, -2 * CELL, 2 * CELL]) {
       const next = { ...this.piece, shape, x: this.piece.x + offset };
@@ -75,11 +83,11 @@ export class Game {
   }
 
   fall() {
-    if (!this.over && !this.move(0, 1)) this.lock();
+    if (!this.over && this.phase === 'playing' && !this.move(0, 1)) this.lock();
   }
 
   drop() {
-    if (this.over) return;
+    if (this.over || this.phase !== 'playing') return;
     while (this.move(0, 1)) { /* Advance until the next row collides. */ }
     this.lock();
   }
@@ -97,6 +105,7 @@ export class Game {
       }
     }
     const reverse = this.tick++ % 2 === 0;
+    let moved = 0;
     for (let y = HEIGHT - 2; y >= 0; y--) {
       for (let col = 0; col < WIDTH; col++) {
         const x = reverse ? WIDTH - 1 - col : col;
@@ -109,16 +118,18 @@ export class Game {
           if (nx >= 0 && nx < WIDTH && !this.grid[target] && !occupied.has(target)) {
             this.grid[target] = this.grid[i];
             this.grid[i] = 0;
+            moved++;
             break;
           }
         }
       }
     }
+    return moved;
   }
 
-  clearConnections() {
+  findConnections() {
     const seen = new Uint8Array(this.grid.length);
-    let cleared = 0;
+    const connected = [];
     for (let start = 0; start < this.grid.length; start++) {
       const color = this.grid[start];
       if (!color || seen[start]) continue;
@@ -142,11 +153,54 @@ export class Game {
         }
       }
       if (left && right) {
-        for (const i of group) this.grid[i] = 0;
-        cleared += group.length;
+        connected.push(...group);
       }
     }
-    this.score += cleared;
-    return cleared;
+    return connected;
+  }
+
+  beginSettling() {
+    this.phase = 'settling';
+    this.phaseTicks = 0;
+    this.stillTicks = 0;
+    this.highlight = [];
+  }
+
+  // Called once per fixed simulation tick. Input and piece gravity wait during
+  // resolution, so each cascade can finish before the next piece moves.
+  step() {
+    if (this.over) return;
+    if (this.phase === 'glowing') {
+      if (++this.phaseTicks >= GLOW_TICKS) {
+        for (const i of this.highlight) this.grid[i] = 0;
+        this.score += this.highlight.length;
+        this.beginSettling();
+      }
+      return;
+    }
+
+    const moved = this.settle();
+    if (this.phase === 'playing') {
+      if (this.findConnections().length) {
+        this.chain = 0;
+        this.beginSettling();
+      }
+      return;
+    }
+
+    this.phaseTicks++;
+    this.stillTicks = moved ? 0 : this.stillTicks + 1;
+    if (this.phaseTicks < SETTLE_TICKS || this.stillTicks < STILL_TICKS) return;
+    // Recompute after settling: islands may have joined or a bridge may have
+    // broken. Never remove the stale component found at the start of the delay.
+    this.highlight = this.findConnections();
+    this.phaseTicks = 0;
+    if (this.highlight.length) {
+      this.phase = 'glowing';
+      this.chain++;
+    } else {
+      this.phase = 'playing';
+      this.chain = 0;
+    }
   }
 }

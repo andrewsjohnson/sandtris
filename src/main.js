@@ -1,4 +1,4 @@
-import { Game, WIDTH, HEIGHT, CELL, COLORS } from './engine.js';
+import { Game, WIDTH, HEIGHT, CELL, COLORS, GLOW_TICKS } from './engine.js';
 
 const canvas = document.querySelector('#board');
 const context = canvas.getContext('2d');
@@ -13,7 +13,7 @@ let lastTime = performance.now();
 const STEP = 1000 / 60;
 
 function action(name) {
-  if (paused || game.over) return;
+  if (paused || game.over || game.phase !== 'playing') return;
   if (name === 'left') game.move(-CELL, 0);
   if (name === 'right') game.move(CELL, 0);
   if (name === 'rotate') game.rotate();
@@ -62,6 +62,18 @@ function draw() {
       context.fillRect(x * scale, y * scale, scale, scale);
     }
   }
+  if (game.phase === 'glowing') {
+    const progress = game.phaseTicks / GLOW_TICKS;
+    context.save();
+    context.globalAlpha = 0.2 + 0.65 * Math.sin(progress * Math.PI);
+    context.fillStyle = '#ffffff';
+    context.shadowColor = '#ffffff';
+    context.shadowBlur = 8;
+    for (const i of game.highlight) {
+      context.fillRect((i % WIDTH) * scale, Math.floor(i / WIDTH) * scale, scale, scale);
+    }
+    context.restore();
+  }
   if (!game.over) {
     context.fillStyle = COLORS[game.piece.color];
     for (const [x, y] of game.piece.shape) {
@@ -69,7 +81,11 @@ function draw() {
     }
   }
   score.textContent = game.score.toLocaleString();
-  status.textContent = game.over ? 'Pile reached the top. Start a new game.' : paused ? 'Paused. Take your time.' : 'Make a color reach both walls.';
+  status.textContent = game.over ? 'Pile reached the top. Start a new game.'
+    : paused ? 'Paused. Take your time.'
+    : game.phase === 'glowing' ? (game.chain > 1 ? `Chain reaction ×${game.chain}!` : 'Connected!')
+    : game.phase === 'settling' ? 'Letting the sand settle…'
+    : 'Make a color reach both walls.';
 }
 
 function frame(time) {
@@ -77,9 +93,9 @@ function frame(time) {
   lastTime = time;
   while (elapsed >= STEP) {
     if (!paused && !game.over) {
-      game.settle();
-      game.clearConnections();
-      if (++fallTicks >= 6) { game.fall(); fallTicks = 0; }
+      game.step();
+      if (game.phase !== 'playing') fallTicks = 0;
+      else if (++fallTicks >= 6) { game.fall(); fallTicks = 0; }
     }
     elapsed -= STEP;
   }
