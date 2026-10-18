@@ -137,7 +137,7 @@ test('removal lets remaining sand settle and glow as a second chain', () => {
 
 test('a connection that breaks while settling is not cleared', () => {
   const game = new Game(() => 0);
-  // The bottom row is connected by a grain perched on a supporting island.
+  // Remove a bridge during the delay to model a component separating.
   game.grid.fill(1, (HEIGHT - 1) * WIDTH);
   game.step();
   assert.equal(game.phase, 'settling');

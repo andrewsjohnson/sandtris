@@ -9,6 +9,6 @@
     "dev": "node scripts/serve.js",
     "start": "node scripts/serve.js",
     "test": "node --test",
-    "check": "node --check src/engine.js && node --check src/main.js && node --check scripts/serve.js"
+    "check": "node --check src/engine.js && node --check src/run.js && node --check src/progression.js && node --check src/main.js && node --check scripts/serve.js"
   }
 }

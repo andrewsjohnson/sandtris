@@ -166,14 +166,18 @@ export class Game {
     this.highlight = [];
   }
 
+  clearHighlighted() {
+    for (const i of this.highlight) this.grid[i] = 0;
+    this.score += this.highlight.length;
+  }
+
   // Called once per fixed simulation tick. Input and piece gravity wait during
   // resolution, so each cascade can finish before the next piece moves.
   step() {
     if (this.over) return;
     if (this.phase === 'glowing') {
       if (++this.phaseTicks >= GLOW_TICKS) {
-        for (const i of this.highlight) this.grid[i] = 0;
-        this.score += this.highlight.length;
+        this.clearHighlighted();
         this.beginSettling();
       }
       return;

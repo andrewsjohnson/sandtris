@@ -3,19 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <title>Sandtris — falling blocks, shifting sands</title>
+    <meta name="theme-color" content="#151a1c" />
+    <title>Sandtris — one more descent</title>
     <link rel="stylesheet" href="./src/style.css" />
   </head>
   <body>
     <main>
-      <header><span class="eyebrow">A LITTLE EXPERIMENT IN GRAVITY</span><h1>Sandtris<span>.</span></h1><p>Falling blocks. Shifting sands.</p></header>
+      <header><div><span class="eyebrow">FALLING BLOCKS · SHIFTING FORTUNES</span><h1>Sandtris<span>.</span></h1></div><button id="camp-button">Camp ↗</button></header>
+      <div id="route" class="route" aria-label="Stage route"></div>
       <section class="game" aria-label="Sandtris game">
-        <canvas id="board" width="240" height="400" aria-label="Game board. Use arrow keys to move and rotate; space to drop."></canvas>
-        <aside><span class="eyebrow">SCORE</span><output id="score" aria-live="polite">0</output><p id="status" role="status">Make a color reach both walls.</p><button id="pause">Pause</button><button id="restart">New game</button><div class="instructions"><p>← → &nbsp; Move</p><p>↑ &nbsp; Rotate</p><p>↓ &nbsp; Fall faster</p><p>Space &nbsp; Drop</p><p>P &nbsp; Pause</p></div></aside>
+        <div class="board-wrap">
+          <canvas id="board" width="240" height="400" tabindex="0" aria-label="Game board. Arrow keys move and rotate; space drops; B excavates."></canvas>
+          <nav aria-label="Touch controls"><button data-action="left" aria-label="Move left">←</button><button data-action="rotate" aria-label="Rotate">↻</button><button data-action="right" aria-label="Move right">→</button><button data-action="drop">Drop ↓</button></nav>
+          <button id="demolish" class="tool" disabled>Excavate · 0 charges <kbd>B</kbd></button>
+        </div>
+        <aside>
+          <span class="eyebrow" id="stage-label">YOUR NEXT DESCENT</span><h2 id="stage-name">Five stages. One board.</h2>
+          <p id="objective">Clear sand, choose upgrades, and see how deep you can go.</p>
+          <progress id="goal-progress" value="0" max="192" aria-label="Stage grain objective"></progress><p class="small" id="goal-count">Ready when you are.</p>
+          <div class="stats"><div><span class="eyebrow">GRAINS CLEARED</span><output id="score">0</output></div><div><span class="eyebrow">SHARDS ON RETURN</span><output id="reward">0</output></div></div>
+          <p id="status" role="status">Connect one color from wall to wall.</p>
+          <button id="pause" disabled>Pause</button>
+          <div class="build"><span class="eyebrow">YOUR BUILD</span><ul id="build-list"><li>No upgrades yet. Finish a stage to draft one.</li></ul></div>
+          <details><summary>How to play</summary><p>Connect one color from wall to wall. Let it settle, glow, and clear. Cascades resolve before your piece moves again.</p><p>← → Move · ↑ Rotate · ↓ Faster<br />Space Drop · P Pause · B Excavate</p><p>Complete each objective to choose an upgrade. Your board carries into the next stage. Reach stage five and clear its goal to win.</p></details>
+        </aside>
       </section>
-      <nav aria-label="Touch controls"><button data-action="left" aria-label="Move left">←</button><button data-action="rotate" aria-label="Rotate">↻</button><button data-action="right" aria-label="Move right">→</button><button data-action="drop">Drop ↓</button></nav>
-      <footer>Connect one color from wall to wall to clear it.<br />Every block becomes a little less predictable.</footer>
+      <footer><span id="save-status">Unlocks saved on this device. Active runs restart on reload.</span><span>Make a little room for the unexpected.</span></footer>
     </main>
+    <dialog id="camp" aria-labelledby="dialog-title"></dialog>
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>
