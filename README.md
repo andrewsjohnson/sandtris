@@ -4,6 +4,17 @@ A falling sand + Tetris experiment. Steer falling tetrominoes; when they land,
 they become sand. Connect a single color from the left wall to the right wall
 to clear that connected group and score one point per grain.
 
+**[Play Sandtris](https://andrewsjohnson.github.io/sandtris/)** ·
+[GitHub repository](https://github.com/andrewsjohnson/sandtris)
+
+## Publishing
+
+GitHub Pages publishes the repository root from `main`. Push changes to `main`
+to update the live game; deployment progress appears in the repository's Actions
+tab. Pull requests run syntax checks and simulation tests before merging.
+The site is static: no build step, backend, or secrets are needed. Keep asset
+URLs relative so the game works under the `/sandtris/` project path.
+
 ## Run locally
 
 Requires Node.js 22 or newer (Node 24 is pinned in `.nvmrc`). There are no package
@@ -58,5 +69,5 @@ accepts an RNG function for reproducible tests and future replay support.
 - Improve touch controls with press-and-hold movement.
 
 This is an early prototype: rotation uses simple horizontal kicks and there is
-no hold piece, lock delay, audio, or persistence yet. Repository visibility,
-remote hosting, and licensing are still to be chosen.
+no hold piece, lock delay, audio, or persistence yet. Licensing is still to be
+chosen.
