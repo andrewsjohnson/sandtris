@@ -12,6 +12,8 @@ export const UPGRADES = [
   { id: 'salvage', name: 'Salvage', icon: '◇', cost: 8, description: 'Every 192 grains cleared after taking this upgrade earns 1 extra shard per stack.' },
   { id: 'dividend', name: 'Deep pockets', icon: '◬', cost: 14, description: 'Each later stage you complete earns 2 extra shards per stack, including the final stage.' },
   { id: 'revival', name: 'Second wind', icon: '↟', cost: 20, description: 'Gain 1 rescue per stack. When topped out, clear the top 16 rows and continue. Rescues last for this run.' },
+  { id: 'powder', name: 'Powder trail', icon: '∴', cost: 8, maxStacks: 4, description: 'Every fourth piece becomes powder, which spreads farther. Stacks shorten the interval to 3, 2, then every piece. Maximum 4 stacks; the preview shows it.' },
+  { id: 'gravel', name: 'Gravel works', icon: '▥', cost: 10, description: 'Make the next piece gravel with G or Queue gravel. Gain 1 use per stage per stack. Gravel forms steeper piles.' },
 ];
 
 const integer = value => Number.isSafeInteger(value) && value >= 0 ? value : 0;

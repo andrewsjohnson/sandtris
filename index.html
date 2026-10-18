@@ -13,21 +13,24 @@
       <div id="route" class="route" aria-label="Stage route"></div>
       <section class="game" aria-label="Sandtris game">
         <div class="board-wrap">
-          <canvas id="board" width="240" height="400" tabindex="0" aria-label="Game board. Arrow keys move and rotate; space drops; B excavates."></canvas>
+          <canvas id="board" width="240" height="400" tabindex="0" aria-label="Game board. Arrow keys move and rotate; space drops; B excavates; C matches color; G queues gravel."></canvas>
           <nav aria-label="Touch controls"><button data-action="left" aria-label="Move left">←</button><button data-action="rotate" aria-label="Rotate">↻</button><button data-action="right" aria-label="Move right">→</button><button data-action="drop">Drop ↓</button></nav>
           <button id="demolish" class="tool" disabled>Excavate · 0 charges <kbd>B</kbd></button>
           <button id="echo" class="tool" disabled>Match next · 0 charges <kbd>C</kbd></button>
+          <button id="gravel" class="tool" hidden disabled>Queue gravel · 0 charges <kbd>G</kbd></button>
         </div>
         <aside>
           <span class="eyebrow" id="stage-label">YOUR NEXT DESCENT</span><h2 id="stage-name">Five stages. One board.</h2>
-          <div class="forecast"><canvas id="next-piece" width="96" height="56" role="img" aria-label="Next piece preview"></canvas><div><span class="eyebrow">NEXT PIECE</span><strong id="next-color">—</strong></div></div>
+          <div class="forecast"><canvas id="next-piece" width="96" height="56" role="img" aria-label="Next piece preview"></canvas><div><span class="eyebrow">NEXT PIECE</span><strong id="next-color">—</strong><span id="next-material" class="small"></span></div></div>
+          <p id="active-material" class="small" hidden></p>
           <p id="objective">Clear sand, choose upgrades, and see how deep you can go.</p>
           <progress id="goal-progress" value="0" max="192" aria-label="Stage grain objective"></progress><p class="small" id="goal-count">Ready when you are.</p>
           <div class="stats"><div><span class="eyebrow">GRAINS CLEARED</span><output id="score">0</output></div><div><span class="eyebrow">SHARDS ON RETURN</span><output id="reward">0</output></div></div>
           <p id="status" role="status">Connect one color from wall to wall.</p>
           <button id="pause" disabled>Pause</button>
           <div class="build"><span class="eyebrow">YOUR BUILD</span><p id="rescue-count" class="small" hidden></p><ul id="build-list"><li>No upgrades yet. Finish a stage to draft one.</li></ul></div>
-          <details><summary>How to play</summary><p>Connect one color from wall to wall. Let it settle, glow, and clear. Cascades resolve before your piece moves again.</p><p>← → Move · ↑ Rotate · ↓ Faster<br />Space Drop · P Pause · B Excavate<br />C Match next color (with Color echo)</p><p>Complete each objective to choose an upgrade. Your board carries into the next stage. Reach stage five and clear its goal to win.</p></details>
+          <details><summary>How to play</summary><p>Connect one color from wall to wall. Let it settle, glow, and clear. Cascades resolve before your piece moves again.</p><p>← → Move · ↑ Rotate · ↓ Faster<br />Space Drop · P Pause · B Excavate<br />C Match next color (with Color echo)<br />G Queue gravel (with Gravel works)</p><p>Complete each objective to choose an upgrade. Your board carries into the next stage. Reach stage five and clear its goal to win.</p></details>
+          <details><summary>Materials</summary><p><strong>Sand</strong> spreads normally. <strong>Gravel</strong> has a coarse, striped texture and forms steeper piles. <strong>Powder</strong> is dotted and spreads up to two cells sideways while falling.</p><p>Color still determines connections: matching colors connect across all materials. Clear a gravel support to let the powder above it collapse into new connections.</p><p>Unlock Powder trail or Gravel works at camp to introduce materials into your runs.</p></details>
         </aside>
       </section>
       <footer><span id="save-status">Unlocks saved on this device. Active runs restart on reload.</span><span>Make a little room for the unexpected.</span></footer>

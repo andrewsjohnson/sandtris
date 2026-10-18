@@ -27,7 +27,7 @@ objectives and score; excavation and pressure vents do not.
 
 ### Upgrades
 
-Four upgrades are available in the starting draft pool. Eight more can be unlocked
+Four upgrades are available in the starting draft pool. Ten more can be unlocked
 permanently at camp. Picks last for the current run and repeat picks stack.
 
 | Upgrade | Effect | Unlock |
@@ -44,14 +44,17 @@ permanently at camp. Picks last for the current run and repeat picks stack.
 | Salvage | Every 192 future connected-clear grains earn one extra shard per stack | 8 shards |
 | Deep pockets | Each later stage completion earns two extra shards per stack | 14 shards |
 | Second wind | One top-out rescue per stack; clear the top 16 rows and continue | 20 shards |
+| Powder trail | Every fourth future piece is powder; stacks reduce the interval to 3, 2, then 1 | 8 shards |
+| Gravel works | Make the next piece gravel; one charge per stage per stack | 10 shards |
 
 Drift grains remain on the board and can become part of a later clear. Aftershock
 preserves grain count and cannot push grains into the active piece. Excavation
 starts a settling phase that can trigger a normal cascade.
 
-The **Next piece** panel shows the queued shape and named color. It stays fixed
+The **Next piece** panel shows the queued shape and named color. Its shape and color stay fixed
 through movement, rotation, sand simulation, and reward choices, then becomes the
-next falling piece. Color echo changes only the active piece, leaving that queue
+next falling piece. The material is also named and textured in the preview.
+Color echo changes only the active piece, leaving that queue
 intact. Matching an already matching color costs no charge; echo charges refill
 at stage entry rather than stockpiling.
 
@@ -59,6 +62,7 @@ Crossroads prefers options absent from the previous draft; small pools may repea
 some choices. Rerolls never change the board or queued piece. Supply cache adds
 charges to your stockpile. Second wind charges last across the run and are not
 refilled by changing stages; rescue removal grants no score or objective progress.
+Powder trail stops at four stacks and disappears from drafts when maxed.
 
 ### Permanent progress
 
@@ -89,6 +93,7 @@ new upgrades are added.
 | P | Pause / resume |
 | B / Excavate button | Use a demolition charge |
 | C / Match next button | Use a Color echo charge |
+| G / Queue gravel button | Use a Gravel works charge on the next piece |
 
 On-screen buttons support touch. Mobile zoom gestures, text selection, tap
 highlighting, and long-press callouts are disabled. The game pauses when the tab
@@ -96,9 +101,35 @@ is hidden. **Camp** asks before ending an active run; cancel to keep playing.
 
 ## Sand and clearing
 
-The board is 60 × 100 sand cells; each tetromino block is 4 × 4 grains. Sand falls
-down or diagonally into empty cells. Four-way same-color connections trigger a
+The board is 60 × 100 sand cells; each tetromino block is 4 × 4 grains. Color and
+material are independent. Four-way same-color connections trigger a
 settling window when they touch both walls; diagonals do not connect.
+
+| Material | Movement | Texture |
+| --- | --- | --- |
+| Sand | Falls vertically, then tries a one-cell diagonal | Solid |
+| Gravel | Falls vertically; rolls diagonally only if the ledge has at least two cells of drop | Coarse stripes |
+| Powder | Falls vertically; can spread two cells sideways into a lower row if the entire path is clear | Light dots |
+
+All three materials support each other and connect when their colors match.
+Gravel builds steeper supports; removing a support can collapse powder above it
+into a cascade. Powder cannot jump through walls or the active piece. Every
+grain moves down at most one row per simulation tick, so all materials eventually
+settle and use the same glow-and-clear sequence.
+
+Unlock **Powder trail** for automatic powder pieces at piece numbers 4, 8, 12,
+and so on. Stacks change that cadence to every third, second, then every future
+piece. Taking or stacking the upgrade updates the already queued piece if it
+falls on the new cadence; the current falling piece stays unchanged.
+
+Unlock **Gravel works** to choose when to queue a gravel piece. It changes only
+the next piece's material, preserving shape and color. Charges refill at stage
+entry without stockpiling. Queuing an already gravel piece costs nothing, and
+a manual gravel reservation takes priority over Powder trail. The queue remains
+fixed unless you explicitly change its material or take a Powder trail upgrade.
+
+Recoloring preserves material. Aftershock carries material with displaced grains;
+clears, excavation, vents, and Second wind remove material data alongside grains.
 
 Sand settles for at least 0.5 seconds and must be still for six ticks before
 connected groups are recomputed. The selected grains glow for 0.4 seconds, then

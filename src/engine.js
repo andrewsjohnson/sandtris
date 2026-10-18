@@ -2,6 +2,10 @@ export const WIDTH = 60;
 export const HEIGHT = 100;
 export const CELL = 4;
 export const COLORS = ['#0b1013', '#f0ba65', '#7bc5b4', '#e88379', '#969ee3'];
+export const SAND = 0;
+export const GRAVEL = 1;
+export const POWDER = 2;
+export const MATERIAL_NAMES = ['Sand', 'Gravel', 'Powder'];
 export const SETTLE_TICKS = 30;
 export const STILL_TICKS = 6;
 export const GLOW_TICKS = 24;
@@ -21,6 +25,8 @@ export class Game {
   constructor(random = Math.random) {
     this.random = random;
     this.grid = new Uint8Array(WIDTH * HEIGHT);
+    this.materials = new Uint8Array(WIDTH * HEIGHT);
+    this.piecesCreated = 0;
     this.score = 0;
     this.over = false;
     this.tick = 0;
@@ -39,6 +45,8 @@ export class Game {
       shape: SHAPES[shape].map(p => [...p]),
       name: SHAPE_NAMES[shape],
       color: 1 + Math.floor(this.random() * 4),
+      material: SAND,
+      number: ++this.piecesCreated,
     };
   }
 
@@ -87,7 +95,9 @@ export class Game {
     for (const [bx, by] of this.piece.shape) {
       for (let dy = 0; dy < CELL; dy++) {
         for (let dx = 0; dx < CELL; dx++) {
-          this.grid[(this.piece.y + by * CELL + dy) * WIDTH + this.piece.x + bx * CELL + dx] = this.piece.color;
+          const i = (this.piece.y + by * CELL + dy) * WIDTH + this.piece.x + bx * CELL + dx;
+          this.grid[i] = this.piece.color;
+          this.materials[i] = this.piece.material;
         }
       }
     }
@@ -102,6 +112,17 @@ export class Game {
     if (this.over || this.phase !== 'playing') return;
     while (this.move(0, 1)) { /* Advance until the next row collides. */ }
     this.lock();
+  }
+
+  clearCell(i) {
+    this.grid[i] = 0;
+    this.materials[i] = SAND;
+  }
+
+  moveGrain(from, to) {
+    this.grid[to] = this.grid[from];
+    this.materials[to] = this.materials[from];
+    this.clearCell(from);
   }
 
   settle() {
@@ -124,12 +145,21 @@ export class Game {
         const i = y * WIDTH + x;
         if (!this.grid[i]) continue;
         const direction = this.random() < 0.5 ? -1 : 1;
-        for (const dx of [0, direction, -direction]) {
+        const material = this.materials[i];
+        const offsets = material === POWDER ? [0, 2 * direction, -2 * direction, direction, -direction] : [0, direction, -direction];
+        for (const dx of offsets) {
           const nx = x + dx;
           const target = i + WIDTH + dx;
           if (nx >= 0 && nx < WIDTH && !this.grid[target] && !occupied.has(target)) {
-            this.grid[target] = this.grid[i];
-            this.grid[i] = 0;
+            // Gravel only rolls off ledges with at least two cells of drop.
+            if (material === GRAVEL && dx && (y + 2 >= HEIGHT || this.grid[target + WIDTH] || occupied.has(target + WIDTH))) continue;
+            // Powder can fan out two columns, but cannot jump through a wall
+            // or the active piece on its way to the destination.
+            if (Math.abs(dx) === 2) {
+              const middle = i + Math.sign(dx);
+              if (this.grid[middle] || this.grid[middle + WIDTH] || occupied.has(middle) || occupied.has(middle + WIDTH)) continue;
+            }
+            this.moveGrain(i, target);
             moved++;
             break;
           }
@@ -179,7 +209,7 @@ export class Game {
   }
 
   clearHighlighted() {
-    for (const i of this.highlight) this.grid[i] = 0;
+    for (const i of this.highlight) this.clearCell(i);
     this.score += this.highlight.length;
   }
 

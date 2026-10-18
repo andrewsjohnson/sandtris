@@ -1,4 +1,4 @@
-import { WIDTH, CELL, COLORS, GLOW_TICKS } from './engine.js';
+import { WIDTH, CELL, COLORS, GLOW_TICKS, GRAVEL, POWDER, MATERIAL_NAMES } from './engine.js';
 import { Run, STAGES } from './run.js';
 import { UPGRADES, loadProgress, saveProgress, unlock, recordRun } from './progression.js';
 
@@ -80,6 +80,7 @@ function action(name) {
   if (name === 'drop') { game.drop(); fallTicks = 0; }
   if (name === 'demolish') game.useDemolition();
   if (name === 'echo') game.useEcho();
+  if (name === 'gravel') game.useGravel();
 }
 function confirmReturn() {
   if (!game || ['won', 'lost', 'retired'].includes(game.state)) { camp(); return; }
@@ -118,19 +119,32 @@ $('#camp-button').addEventListener('click', confirmReturn);
 $('#pause').addEventListener('click', event => { setPaused(!paused); event.target.blur(); });
 $('#demolish').addEventListener('click', event => { action('demolish'); event.target.blur(); });
 $('#echo').addEventListener('click', event => { action('echo'); event.target.blur(); });
+$('#gravel').addEventListener('click', event => { action('gravel'); event.target.blur(); });
 document.querySelectorAll('[data-action]').forEach(button => {
   button.addEventListener('click', () => { action(button.dataset.action); button.blur(); });
 });
 document.addEventListener('keydown', event => {
   if (dialog.open || event.target instanceof HTMLButtonElement) return;
-  const keys = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'rotate', ArrowDown: 'down', ' ': 'drop', b: 'demolish', B: 'demolish', c: 'echo', C: 'echo' };
+  const keys = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'rotate', ArrowDown: 'down', ' ': 'drop', b: 'demolish', B: 'demolish', c: 'echo', C: 'echo', g: 'gravel', G: 'gravel' };
   if (keys[event.key]) {
     event.preventDefault();
-    if (!event.repeat || !['rotate', 'drop', 'demolish', 'echo'].includes(keys[event.key])) action(keys[event.key]);
+    if (!event.repeat || !['rotate', 'drop', 'demolish', 'echo', 'gravel'].includes(keys[event.key])) action(keys[event.key]);
   }
   if (event.key.toLowerCase() === 'p' && !event.repeat && game?.state === 'active') setPaused(!paused);
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden && game) setPaused(true); });
+
+function paintGrain(ctx, x, y, size, color, material) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, size, size);
+  if (material === GRAVEL) {
+    ctx.fillStyle = '#00000066';
+    ctx.fillRect(x, y, size, Math.max(1, size / 4));
+  } else if (material === POWDER) {
+    ctx.fillStyle = '#ffffff99';
+    ctx.fillRect(x + size / 3, y + size / 3, Math.max(1, size / 4), Math.max(1, size / 4));
+  }
+}
 
 function drawPreview() {
   const signature = JSON.stringify(game?.nextPiece || null);
@@ -139,7 +153,8 @@ function drawPreview() {
   previewContext.clearRect(0, 0, preview.width, preview.height);
   const next = game?.nextPiece;
   setText('#next-color', next ? colorNames[next.color] : '—');
-  preview.setAttribute('aria-label', next ? `Next piece: ${next.name}, ${colorNames[next.color]}` : 'Begin a run to see the next piece');
+  setText('#next-material', next ? MATERIAL_NAMES[next.material] : '');
+  preview.setAttribute('aria-label', next ? `Next piece: ${next.name}, ${colorNames[next.color]}, ${MATERIAL_NAMES[next.material]}` : 'Begin a run to see the next piece');
   if (!next) return;
   const xs = next.shape.map(([x]) => x);
   const ys = next.shape.map(([, y]) => y);
@@ -148,8 +163,7 @@ function drawPreview() {
   const block = 12;
   const offsetX = (preview.width - (Math.max(...xs) - minX + 1) * block) / 2;
   const offsetY = (preview.height - (Math.max(...ys) - minY + 1) * block) / 2;
-  previewContext.fillStyle = COLORS[next.color];
-  for (const [x, y] of next.shape) previewContext.fillRect(offsetX + (x - minX) * block, offsetY + (y - minY) * block, block - 1, block - 1);
+  for (const [x, y] of next.shape) paintGrain(previewContext, offsetX + (x - minX) * block, offsetY + (y - minY) * block, block - 1, COLORS[next.color], next.material);
 }
 
 function draw() {
@@ -160,8 +174,7 @@ function draw() {
   if (game) {
     for (let i = 0; i < game.grid.length; i++) {
       if (!game.grid[i]) continue;
-      context.fillStyle = COLORS[game.grid[i]];
-      context.fillRect((i % WIDTH) * scale, Math.floor(i / WIDTH) * scale, scale, scale);
+      paintGrain(context, (i % WIDTH) * scale, Math.floor(i / WIDTH) * scale, scale, COLORS[game.grid[i]], game.materials[i]);
     }
     if (game.phase === 'glowing') {
       context.save();
@@ -173,8 +186,11 @@ function draw() {
       context.restore();
     }
     if (!game.over) {
-      context.fillStyle = COLORS[game.piece.color];
-      for (const [x, y] of game.piece.shape) context.fillRect((game.piece.x + x * CELL) * scale, (game.piece.y + y * CELL) * scale, CELL * scale, CELL * scale);
+      for (const [bx, by] of game.piece.shape) {
+        for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) {
+          paintGrain(context, (game.piece.x + bx * CELL + x) * scale, (game.piece.y + by * CELL + y) * scale, scale, COLORS[game.piece.color], game.piece.material);
+        }
+      }
     }
   }
   setText('#score', (game?.score || 0).toLocaleString());
@@ -188,6 +204,13 @@ function draw() {
   const echoText = `Match next · ${game?.echoCharges || 0} charges`;
   if ($('#echo').dataset.label !== echoText) { $('#echo').innerHTML = `${echoText} <kbd>C</kbd>`; $('#echo').dataset.label = echoText; }
   $('#echo').title = game && game.piece.color === game.nextPiece.color ? 'This piece already matches the next color; no charge needed.' : 'Color echo: match this piece to the next color.';
+  $('#gravel').hidden = !game?.upgrades.gravel;
+  $('#gravel').disabled = !game?.canAct || !game.gravelCharges || paused || dialog.open || game.nextPiece.material === GRAVEL;
+  const gravelText = `Queue gravel · ${game?.gravelCharges || 0} charges`;
+  if ($('#gravel').dataset.label !== gravelText) { $('#gravel').innerHTML = `${gravelText} <kbd>G</kbd>`; $('#gravel').dataset.label = gravelText; }
+  $('#gravel').title = game?.nextPiece.material === GRAVEL ? 'The next piece is already gravel; no charge needed.' : 'Make the next piece gravel without changing its shape or color.';
+  $('#active-material').hidden = !game;
+  setText('#active-material', game ? `Falling: ${MATERIAL_NAMES[game.piece.material]}` : '');
   $('#rescue-count').hidden = !game?.upgrades.revival;
   setText('#rescue-count', `Rescues remaining: ${game?.rescues || 0}`);
   document.querySelectorAll('[data-action]').forEach(button => { button.disabled = !game?.canAct || paused || dialog.open; });

@@ -1,4 +1,4 @@
-import { Game, WIDTH, HEIGHT, CELL } from './engine.js';
+import { Game, WIDTH, HEIGHT, CELL, SAND, GRAVEL, POWDER } from './engine.js';
 import { UPGRADES } from './progression.js';
 
 export const STAGES = [
@@ -23,6 +23,7 @@ export class Run extends Game {
     this.upgrades = {};
     this.charges = 0;
     this.echoCharges = 0;
+    this.gravelCharges = 0;
     this.rescues = 0;
     this.rerolls = 0;
     this.salvageGrains = 0;
@@ -39,21 +40,38 @@ export class Run extends Game {
   }
   get canAct() { return this.state === 'active' && !this.over && this.phase === 'playing'; }
 
+  createPiece() {
+    const piece = super.createPiece();
+    // The base constructor creates the first queue before run upgrades exist.
+    piece.material = this.materialForPiece(piece.number);
+    return piece;
+  }
+
+  materialForPiece(number) {
+    const level = this.upgrades?.powder || 0;
+    return level && number % Math.max(1, 5 - level) === 0 ? POWDER : SAND;
+  }
+
   move(dx, dy) { return this.state && this.state !== 'active' ? false : super.move(dx, dy); }
   rotate() { if (this.state === 'active') super.rotate(); }
   fall() { if (this.state === 'active') super.fall(); }
   drop() { if (this.state === 'active') super.drop(); }
 
   addUpgrade(id) {
+    const upgrade = UPGRADES.find(u => u.id === id);
+    if (!upgrade || (this.upgrades[id] || 0) >= (upgrade.maxStacks || Infinity)) return false;
     this.upgrades[id] = (this.upgrades[id] || 0) + 1;
     if (id === 'demolition') this.charges += 2;
     if (id === 'supply') this.charges++;
     if (id === 'echo') this.echoCharges++;
     if (id === 'revival') this.rescues++;
+    if (id === 'gravel') this.gravelCharges++;
+    if (id === 'powder' && this.nextPiece.material !== GRAVEL) this.nextPiece.material = this.materialForPiece(this.nextPiece.number);
+    return true;
   }
 
   rollOffers(previous = []) {
-    const pool = [...this.pool];
+    const pool = this.pool.filter(u => (this.upgrades[u.id] || 0) < (u.maxStacks || Infinity));
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(this.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
@@ -77,9 +95,11 @@ export class Run extends Game {
   }
 
   choose(id) {
-    if (this.state !== 'reward' || !this.offers.some(u => u.id === id)) return false;
+    const offered = this.offers.find(u => u.id === id);
+    if (this.state !== 'reward' || !offered || (this.upgrades[id] || 0) >= (offered.maxStacks || Infinity)) return false;
     this.charges += this.upgrades.supply || 0;
     this.echoCharges = this.upgrades.echo || 0;
+    this.gravelCharges = this.upgrades.gravel || 0;
     this.addUpgrade(id);
     this.stage++;
     this.stageScore = 0;
@@ -97,7 +117,7 @@ export class Run extends Game {
     const cx = top % WIDTH;
     const cy = Math.floor(top / WIDTH) + radius;
     for (let y = Math.max(0, cy - radius); y <= Math.min(HEIGHT - 1, cy + radius); y++) {
-      for (let x = Math.max(0, cx - radius); x <= Math.min(WIDTH - 1, cx + radius); x++) this.grid[y * WIDTH + x] = 0;
+      for (let x = Math.max(0, cx - radius); x <= Math.min(WIDTH - 1, cx + radius); x++) this.clearCell(y * WIDTH + x);
     }
     return true;
   }
@@ -114,6 +134,13 @@ export class Run extends Game {
     if (!this.canAct || !this.echoCharges || this.piece.color === this.nextPiece.color) return false;
     this.piece.color = this.nextPiece.color;
     this.echoCharges--;
+    return true;
+  }
+
+  useGravel() {
+    if (!this.canAct || !this.gravelCharges || this.nextPiece.material === GRAVEL) return false;
+    this.nextPiece.material = GRAVEL;
+    this.gravelCharges--;
     return true;
   }
 
@@ -168,8 +195,7 @@ export class Run extends Game {
           const x = i % WIDTH + dx;
           const target = i + dx;
           if (x >= 0 && x < WIDTH && !this.grid[target] && !occupied.has(target)) {
-            this.grid[target] = this.grid[i];
-            this.grid[i] = 0;
+            this.moveGrain(i, target);
             moved.add(target);
             break;
           }
@@ -190,6 +216,7 @@ export class Run extends Game {
     if (this.over && this.rescues) {
       this.rescues--;
       this.grid.fill(0, 0, 16 * WIDTH);
+      this.materials.fill(SAND, 0, 16 * WIDTH);
       this.over = false;
       this.chain = 0;
       this.beginSettling();

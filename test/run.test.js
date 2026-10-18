@@ -100,7 +100,7 @@ test('unlock pool is a snapshot; only purchased upgrades can start a run', () =>
   const equipped = new Run(progress, () => 0, 'drift');
   assert.equal(equipped.pool.length, 5);
   assert.equal(equipped.upgrades.drift, 1);
-  assert.equal(UPGRADES.length, 12);
+  assert.equal(UPGRADES.length, 14);
 });
 
 test('Patient hands stacks slower gravity; demolition consumes charges and settles without scoring', () => {

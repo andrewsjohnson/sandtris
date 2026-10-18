@@ -48,7 +48,7 @@ aside > button { width: 100%; }
 nav { display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr; gap: 8px; margin-top: 12px; }
 nav button { min-height: 48px; font-size: 17px; padding: 8px; }
 nav button:last-child { font-size: 12px; }
-.tool { width: 100%; margin-top: 8px; }
+.tool { width: 100%; min-height: 44px; margin-top: 8px; }
 kbd { color: #939f9d; margin-left: 8px; }
 details { margin-top: 22px; font-size: 11px; color: #939f9d; }
 summary { cursor: pointer; }
